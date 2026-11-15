@@ -9,26 +9,64 @@
 <meta name="apple-mobile-web-app-title" content="AI Tok">
 <meta name="theme-color" content="#000000">
 <meta name="referrer" content="no-referrer">
+<meta name="format-detection" content="telephone=no">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=3">
 <title>AI Tok</title>
 </head>
 <body>
-<div id="feed" class="feed"></div>
-<div id="topbar" class="topbar">
-  <button id="btnSaved" class="pill">收藏</button>
-  <span id="status" class="status"></span>
-  <button id="btnSound" class="pill">🔇 点我开声音</button>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.2c-.3 0-.6-.1-.8-.3C5.4 16.1 2 13 2 8.9 2 5.9 4.4 3.5 7.3 3.5c1.8 0 3.5.9 4.7 2.3 1.2-1.4 2.9-2.3 4.7-2.3 2.9 0 5.3 2.4 5.3 5.4 0 4.1-3.4 7.2-9.2 12-.2.2-.5.3-.8.3z"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.5 2.5h11c1.1 0 2 .9 2 2v16.2c0 .8-.9 1.3-1.6.8L12 17.3l-5.9 4.2c-.7.5-1.6 0-1.6-.8V4.5c0-1.1.9-2 2-2z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M13.6 3.3c-.6-.5-1.6-.1-1.6.7v3.6C6.1 8.3 2.6 12.6 2 19.4c-.1.8.9 1.2 1.4.6 2.2-2.7 4.9-4.1 8.6-4.2v3.7c0 .8 1 1.2 1.6.7l8.2-7.6c.4-.4.4-1 0-1.4l-8.2-7.9z"/></symbol>
+  <symbol id="i-nope" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6" stroke="currentColor" stroke-width="2.2" fill="none"/><path d="M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.1v13.8c0 .8.9 1.3 1.5.8l10.4-6.9c.6-.4.6-1.2 0-1.6L9.5 4.3C8.9 3.9 8 4.3 8 5.1z"/></symbol>
+  <symbol id="i-muted" viewBox="0 0 24 24"><path d="M11 5.2 6.6 8.8H3.8c-.5 0-.8.4-.8.8v4.8c0 .5.4.8.8.8h2.8l4.4 3.6c.5.4 1.3.1 1.3-.6V5.8c0-.7-.8-1-1.3-.6z"/><path d="m15.5 9.5 5 5m0-5-5 5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M11 5.2 6.6 8.8H3.8c-.5 0-.8.4-.8.8v4.8c0 .5.4.8.8.8h2.8l4.4 3.6c.5.4 1.3.1 1.3-.6V5.8c0-.7-.8-1-1.3-.6z"/><path d="M15.5 8.8a4.5 4.5 0 0 1 0 6.4M18.2 6.2a8.2 8.2 0 0 1 0 11.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v4.5c0 .8-.7 1.5-1.5 1.5h-11c-.8 0-1.5-.7-1.5-1.5v-11C4 6.7 4.7 6 5.5 6H10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div id="ptr" class="ptr"><i></i><span>下拉刷新</span></div>
+<main id="feed" class="feed" aria-label="推荐视频"></main>
+
+<div id="boot" class="boot">
+  <div class="sk-frame"><div class="sk-shimmer"></div></div>
+  <div class="sk-rail"><i></i><i></i><i></i><i></i></div>
+  <div class="sk-meta"><i class="w40"></i><i class="w80"></i><i class="w60"></i></div>
 </div>
-<div id="savedPanel" class="panel hidden">
-  <div class="panel-head"><b>收藏 / 看过</b>
-    <span><button id="tabSaved" class="pill on">收藏</button><button id="tabLiked" class="pill">喜欢</button><button id="tabHistory" class="pill">历史</button></span>
-    <button id="btnClose" class="pill">关闭</button></div>
-  <div id="savedList" class="panel-list"></div>
-  <div class="panel-foot"><button id="btnExport" class="pill">导出我的数据</button><button id="btnReset" class="pill">重置推荐</button></div>
+<div id="errorState" class="state hidden">
+  <div class="state-card"><div class="state-emoji">📡</div><div class="state-title">加载失败</div><div class="state-sub">网络好像断了，检查一下再试试</div><button id="btnRetry" class="btn-primary">重新加载</button></div>
 </div>
-<div id="toast" class="toast hidden"></div>
-<script src="app.js"></script>
+
+<header id="topbar" class="topbar">
+  <button id="btnSound" class="icon-btn" aria-label="声音"><svg><use href="#i-muted"/></svg></button>
+  <nav class="tabs" role="tablist">
+    <button id="tabFeed" class="tab on" role="tab">推荐</button>
+    <button id="tabLib" class="tab" role="tab">收藏</button>
+    <span id="tabInk" class="tab-ink"></span>
+  </nav>
+</header>
+<div id="soundHint" class="sound-hint hidden"><svg><use href="#i-muted"/></svg>点这里开声音</div>
+<div id="speedPill" class="speed-pill"><b>2×</b> 快进中</div>
+
+<section id="library" class="library" aria-hidden="true">
+  <div class="lib-head">
+    <div class="lib-title">我的收藏</div>
+    <div class="seg" role="tablist">
+      <button data-k="saved" class="on">收藏 <em id="cSaved">0</em></button>
+      <button data-k="liked">喜欢 <em id="cLiked">0</em></button>
+      <button data-k="history">看过 <em id="cHistory">0</em></button>
+    </div>
+  </div>
+  <div id="libGrid" class="lib-grid"></div>
+  <div class="lib-foot"><button id="btnExport" class="ghost">导出我的数据</button><span>·</span><button id="btnReset" class="ghost">重置推荐</button></div>
+</section>
+
+<div id="toast" class="toast"></div>
+<script src="app.js?v=3"></script>
 </body>
 </html>
