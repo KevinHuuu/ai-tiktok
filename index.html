@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AI Tok">
+<meta name="theme-color" content="#000000">
+<meta name="referrer" content="no-referrer">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="styles.css">
+<title>AI Tok</title>
+</head>
+<body>
+<div id="feed" class="feed"></div>
+<div id="topbar" class="topbar">
+  <button id="btnSaved" class="pill">收藏</button>
+  <span id="status" class="status"></span>
+  <button id="btnSound" class="pill">🔇 点我开声音</button>
+</div>
+<div id="savedPanel" class="panel hidden">
+  <div class="panel-head"><b>收藏 / 看过</b>
+    <span><button id="tabSaved" class="pill on">收藏</button><button id="tabLiked" class="pill">喜欢</button><button id="tabHistory" class="pill">历史</button></span>
+    <button id="btnClose" class="pill">关闭</button></div>
+  <div id="savedList" class="panel-list"></div>
+  <div class="panel-foot"><button id="btnExport" class="pill">导出我的数据</button><button id="btnReset" class="pill">重置推荐</button></div>
+</div>
+<div id="toast" class="toast hidden"></div>
+<script src="app.js"></script>
+</body>
+</html>
