@@ -13,11 +13,12 @@ svg{width:100%;height:100%;fill:currentColor;display:block}
 .feed{position:fixed;inset:0;overflow-y:scroll;overflow-x:hidden;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-y:contain;transition:opacity .25s,transform .25s}
 .feed::-webkit-scrollbar{display:none}
 .slide{position:relative;height:100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:#000;contain:strict}
-.bg{position:absolute;inset:-60px;background:#000 center/cover no-repeat;filter:blur(36px) saturate(1.3) brightness(.5);transform:translateZ(0)}
-.slide.vert .bg{display:none}
+.bg{display:none} /* fitted clips sit on pure black, like Douyin (a blurred white slide turned into grey mush) */
 .poster,.slide video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:center/contain no-repeat}
 .slide.vert .poster{background-size:cover}
 .slide.vert video{object-fit:cover}
+/* fitted clips: exact box from layoutSlide() */
+.slide:not(.vert) .poster,.slide:not(.vert) video{top:var(--mt,0);left:var(--ml,0);width:var(--mw,100%);height:var(--mh,100%);right:auto;bottom:auto}
 .slide video{opacity:0;transition:opacity .18s;background:transparent}
 .slide.ready video{opacity:1}
 .shade-top,.shade-bot{position:absolute;left:0;right:0;pointer-events:none}
@@ -53,7 +54,9 @@ svg{width:100%;height:100%;fill:currentColor;display:block}
 .who .when{font-weight:400;font-size:13px;color:var(--dim)}
 .cap{font-size:15px;line-height:1.42;color:var(--txt);word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .cap .zh{font-weight:600}
-.meta.open .cap{display:block;max-height:38vh;overflow-y:auto;-webkit-mask:none}
+.meta.open .cap{display:block;max-height:36vh;overflow-y:auto;-webkit-mask:none;overscroll-behavior:contain;pointer-events:auto}
+.shade-bot{transition:height .2s,background .2s}
+.cap-open .shade-bot{height:70%;background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.55) 40%,rgba(0,0,0,.85))}
 .more{font-size:14px;font-weight:600;color:#fff;opacity:.9;margin-top:2px;display:inline-block;padding:2px 0}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
 .chip{font-size:12.5px;font-weight:600;padding:3px 9px;border-radius:5px;background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
@@ -158,7 +161,7 @@ svg{width:100%;height:100%;fill:currentColor;display:block}
 .act{text-shadow:0 1px 3px rgba(0,0,0,.6)}
 .shade-top{background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.2) 55%,rgba(0,0,0,0))}
 /* 全屏观看 pill under letterboxed landscape clips */
-.fs-btn{position:absolute;left:50%;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:17px;background:rgba(255,255,255,.18);border:.5px solid rgba(255,255,255,.25);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:13px;font-weight:600;color:#fff;white-space:nowrap}
+.fs-btn{position:absolute;top:62%;left:50%;transform:translateX(-50%);z-index:2;display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:17px;background:rgba(255,255,255,.18);border:.5px solid rgba(255,255,255,.25);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:13px;font-weight:600;color:#fff;white-space:nowrap}
 .fs-btn svg{width:13px;height:13px}
 /* pull-to-refresh indicator */
 .ptr{position:fixed;left:50%;top:calc(var(--sat) + 52px);z-index:12;transform:translate(-50%,-40px);opacity:0;display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:16px;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);font-size:13px;font-weight:600;pointer-events:none;transition:opacity .2s}
@@ -171,9 +174,16 @@ svg{width:100%;height:100%;fill:currentColor;display:block}
   .rail,.meta,.topbar,.shade-top,.shade-bot,.fs-btn,.sound-hint,.ptr{display:none!important}
   .slide video,.slide.vert video{object-fit:contain}
   .poster,.slide.vert .poster{background-size:contain}
-  .slide.vert .bg{display:block}
+  .slide .poster,.slide video{top:0!important;left:0!important;width:100%!important;height:100%!important}
   .scrub{left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));bottom:max(6px,var(--sab))}
 }
 .slide:fullscreen{width:100vw;height:100vh}
 .slide:fullscreen .rail,.slide:fullscreen .meta,.slide:fullscreen .fs-btn,.slide:fullscreen .shade-bot{display:none}
 .slide:fullscreen video{object-fit:contain}
+.slide:fullscreen .poster,.slide:fullscreen video{top:0!important;left:0!important;width:100%!important;height:100%!important}
+/* short phones (SE / mini in Safari): tighter rail so it doesn't climb into the video */
+@media (orientation:portrait) and (max-height:720px){
+  .rail{gap:13px;bottom:calc(var(--sab) + 100px)}
+  .act .ico{width:34px;height:34px}.act.like .ico{width:36px;height:36px}.act.dis .ico{width:29px;height:29px}
+  .avatar{width:46px;height:46px}
+}

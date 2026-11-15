@@ -100,15 +100,15 @@ const svg = (id) => `<svg><use href="#${id}"/></svg>`;
 function makeSlide(item, recycled) {
   const el = document.createElement('section');
   const asp = (item.width > 0 && item.height > 0) ? item.width / item.height : (item.vertical ? 9 / 16 : 16 / 9);
-  const land = asp > 1.05;   // fill only phone-shaped clips; everything else fits over a blurred backdrop
-  el.className = 'slide' + (asp < 0.67 ? ' vert' : '') + (land ? ' land' : '');
+  const land = asp > 1.05;   // 'vert' (aspect-fill) is decided per screen in layoutSlide(); everything else fits on black
+  el.className = 'slide' + (land ? ' land' : '');
   const poster = item.poster ? `url("${item.poster}")` : 'none';
   const srcName = { x: 'X', hf: 'HF Papers', bsky: 'Bluesky' }[item.source] || item.source;
   const topics = (item.topics && item.topics.length ? item.topics : [item.topic]).filter(t => t && t !== 'other');
   const head = headline(item), body = bodyText(item);
   const h = hue(item.author);
   const av = item.avatar ? `style='background-image:url("${esc(item.avatar)}")'` : `style="background:linear-gradient(135deg,hsl(${h},75%,55%),hsl(${(h + 50) % 360},80%,45%))"`;
-  el.innerHTML = `<div class="bg" style='background-image:${poster}'></div><div class="poster" style='background-image:${poster}'></div>
+  el.innerHTML = `<div class="poster" style='background-image:${poster}'></div>
     <div class="shade-top"></div><div class="shade-bot"></div>
     <div class="pause-ico">${svg('i-play')}</div>
     <div class="rail">
@@ -124,10 +124,10 @@ function makeSlide(item, recycled) {
       <button class="more hidden">展开</button>
       <div class="chips">${recycled ? '<span class="chip re">重温</span>' : ''}${item.lang === 'zh' ? '<span class="chip lang">中文</span>' : ''}${topics.slice(0, 3).map(t => `<span class="chip">#${esc(TOPIC_ZH[t] || t)}</span>`).join('')}<a class="chip src" href="${esc(item.url)}" target="_blank" rel="noopener">${srcName} 原帖${svg('i-ext')}</a></div>
     </div>
-    ${land ? `<button class="fs-btn" style="top:calc(50% + ${(50 / asp).toFixed(2)}vw + 16px)">${svg('i-full')}全屏观看</button>` : ''}
+    ${land ? `<button class="fs-btn">${svg('i-full')}全屏观看</button>` : ''}
     <div class="timecode"></div>
     <div class="scrub"><div class="track"><div class="fill"></div><div class="knob"></div></div></div>`;
-  const s = { item, el, recycled };
+  const s = { item, el, recycled, asp };
   const q = (c) => el.querySelector(c);
   s.fill = q('.fill'); s.knob = q('.knob'); s.tc = q('.timecode');
   const stop = (fn) => (e) => { e.stopPropagation(); fn(e); };
@@ -138,7 +138,7 @@ function makeSlide(item, recycled) {
   q('.avatar').onclick = stop(() => follow(s));
   if (land) q('.fs-btn').onclick = stop(() => fullscreen(s));
   q('.src').onclick = (e) => { e.stopPropagation(); logEvent({ type: 'open', id: item.id }); };
-  q('.more').onclick = stop(() => { const m = q('.meta'), open = m.classList.toggle('open'); q('.more').textContent = open ? '收起' : '展开'; });
+  q('.more').onclick = stop(() => { const m = q('.meta'), open = m.classList.toggle('open'); el.classList.toggle('cap-open', open); q('.more').textContent = open ? '收起' : '展开'; });
   q('.cap').onclick = stop(() => { if (!q('.more').classList.contains('hidden')) q('.more').click(); });
   bindGestures(s); bindScrub(s);
   refreshButtons(s);
@@ -205,8 +205,33 @@ function appendMore(n) {
       endEl.innerHTML = `<div class="state-card"><div class="state-emoji">🎉</div><div class="state-title">全部看完啦</div><div class="state-sub">新视频每天早上自动补充。<br>先去收藏里重温一下？</div><button class="btn-primary">打开收藏</button></div>`;
       endEl.querySelector('button').onclick = () => setMode('lib'); feedEl.appendChild(endEl); } break; }
     const s = makeSlide(p.item, p.recycled);
-    slides.push(s); feedEl.insertBefore(s.el, endEl);
+    slides.push(s); feedEl.insertBefore(s.el, endEl); layoutSlide(s);
   }
+}
+// Where the video sits in its slide (same rules as the native app's CellLayout):
+// - phone-shaped clips aspect-fill only when that crops <= ~5% per side (a 9:16 explainer on a 19.5:9 phone would
+//   lose its edge text), otherwise they are fitted to the width;
+// - landscape/square clips sit just above the right rail instead of dead-center under the avatar and heart
+//   (white slides made the white icons invisible), but never under the top tabs.
+function layoutSlide(s) {
+  const el = s.el, W = feedEl.clientWidth || innerWidth, H = feedEl.clientHeight || innerHeight, asp = s.asp;
+  const fsb = el.querySelector('.fs-btn');
+  if (W > H) { el.classList.remove('vert'); for (const k of ['--mt', '--ml', '--mw', '--mh']) el.style.removeProperty(k); return; }
+  const scr = W / H, fill = asp < 0.67 && asp / scr < 1.11 && scr / asp < 1.11;
+  el.classList.toggle('vert', fill);
+  if (fill) { for (const k of ['--mt', '--ml', '--mw', '--mh']) el.style.removeProperty(k); return; }
+  let w = W, h = W / asp; if (h > H) { h = H; w = H * asp; }
+  let cy = H / 2;
+  if (asp >= 0.9) {
+    const tb = $('#topbar').offsetHeight || 48, rail = el.querySelector('.rail');
+    const railTop = rail ? rail.offsetTop : H * 0.55;
+    const avail = railTop - 14 - tb;   // short screens: shrink a little (at most 14%) so the avatar doesn't cover the edge
+    if (h > avail) { const k = Math.max(0.86, avail / h); w *= k; h *= k; }
+    cy = Math.max(tb + h / 2, Math.min(H / 2, railTop - 14 - h / 2));
+  }
+  el.style.setProperty('--mt', (cy - h / 2).toFixed(1) + 'px'); el.style.setProperty('--mh', h.toFixed(1) + 'px');
+  el.style.setProperty('--ml', ((W - w) / 2).toFixed(1) + 'px'); el.style.setProperty('--mw', w.toFixed(1) + 'px');
+  if (fsb) fsb.style.top = Math.min(cy + h / 2 + 14, H - 220).toFixed(1) + 'px';
 }
 function scrollToIndex(i, instant) { if (i < 0) return; if (i >= slides.length) appendMore(3); feedEl.scrollTo({ top: i * feedEl.clientHeight, behavior: instant ? 'auto' : 'smooth' }); }
 
@@ -236,7 +261,8 @@ function bindGestures(s) {
       return;
     }
     lastTap = now; lastX = e.clientX; lastY = e.clientY;
-    clearTimeout(tapTimer); tapTimer = setTimeout(() => togglePause(s), 260);
+    // with the caption open, a tap on the video just closes it (like Douyin) instead of pausing
+    clearTimeout(tapTimer); tapTimer = setTimeout(() => { if (el.classList.contains('cap-open')) el.querySelector('.more').click(); else togglePause(s); }, 260);
   });
 }
 function bindScrub(s) {
@@ -355,7 +381,7 @@ let recycleNoticed = false, hintDone = false;
 function activate(i) {
   if (i === cur || i < 0 || i >= slides.length) return;
   endSession();
-  if (slides[cur]) { const ov = videoOf(slides[cur]); if (ov) { ov.pause(); ov.playbackRate = 1; } slides[cur].el.classList.remove('paused', 'scrubbing'); const m = slides[cur].el.querySelector('.meta.open'); if (m) { m.classList.remove('open'); m.querySelector('.more').textContent = '展开'; } }
+  if (slides[cur]) { const ov = videoOf(slides[cur]); if (ov) { ov.pause(); ov.playbackRate = 1; } slides[cur].el.classList.remove('paused', 'scrubbing'); const m = slides[cur].el.querySelector('.meta.open'); if (m) { m.classList.remove('open'); slides[cur].el.classList.remove('cap-open'); m.querySelector('.more').textContent = '展开'; } }
   cur = i;
   if (cur >= slides.length - 3) appendMore(4);
   assignPool();
@@ -385,7 +411,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (v) v.pause(); } else if (v && mode === 'feed' && !slides[cur].el.classList.contains('paused')) playActive();
 });
 window.addEventListener('pagehide', endSession);
-window.addEventListener('resize', () => { if (cur >= 0) feedEl.scrollTo({ top: cur * feedEl.clientHeight }); });
+window.addEventListener('resize', () => { for (const s of slides) layoutSlide(s); if (cur >= 0) feedEl.scrollTo({ top: cur * feedEl.clientHeight }); });
 
 // ---------- sound (remembered; browsers need one tap before audio) ----------
 function paintSound() { $('#btnSound').innerHTML = svg(soundOn ? 'i-sound' : 'i-muted'); $('#soundHint').classList.toggle('hidden', soundOn || hintDone || mode !== 'feed' || pref('0') === '0x'); }
@@ -469,7 +495,7 @@ function renderLib() {
 }
 function openItem(it) {
   const at = cur + 1, s = makeSlide(it, true);
-  slides.splice(at, 0, s); feedEl.insertBefore(s.el, slides[at + 1] ? slides[at + 1].el : endEl);
+  slides.splice(at, 0, s); feedEl.insertBefore(s.el, slides[at + 1] ? slides[at + 1].el : endEl); layoutSlide(s);
   setMode('feed'); assignPool(); setTimeout(() => scrollToIndex(at), 60);
 }
 $('#btnExport').onclick = () => {
